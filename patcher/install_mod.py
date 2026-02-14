@@ -13,9 +13,20 @@ Mewgenics 日本語MOD インストーラー
 import json
 import os
 import shutil
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+
+
+def _setup_console():
+    """Windows コンソールを UTF-8 に設定"""
+    if sys.platform == "win32":
+        subprocess.run(["chcp", "65001"], shell=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        os.system("title Mewgenics JP MOD Installer")
 
 SCRIPT_DIR = Path(__file__).parent
 ROOT_DIR = SCRIPT_DIR.parent
@@ -291,6 +302,7 @@ def do_install():
 
 
 def main():
+    _setup_console()
     try:
         success = do_install()
     except KeyboardInterrupt:
@@ -303,7 +315,6 @@ def main():
     if not success:
         print()
 
-    input("  Enter キーを押して終了...")
     sys.exit(0 if success else 1)
 
 

@@ -9,7 +9,7 @@
     "tested_versions": {
         "note": "テスト済みの exe/gpak サイズ。未知のサイズは警告を出すが続行可能。",
         "exe_sizes": [21901312],
-        "gpak_sizes": []
+        "gpak_sizes": [4892207115]
     },
     "patch_signatures": {
         "note": "パッチ適用済み判定用シグネチャ",

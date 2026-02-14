@@ -30,6 +30,10 @@ jobs:
           cd ../../..
           rm python-embed.zip
 
+          # Add parent dir to module search path
+          PTH=$(ls build/MewgenicsJP/python/python*._pth)
+          echo ".." >> "$PTH"
+
       - name: Assemble release ZIP
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}

@@ -171,14 +171,26 @@ def _find_patch2(data, text_start, text_end, text_section):
     return candidates[0]
 
 
+def _has_fullwidth_space_check(data, idx, text_start, text_end):
+    """近傍に全角スペース (0x3000) の比較命令があるか確認"""
+    search_start = max(text_start, idx - 0x40)
+    search_end = min(text_end, idx + 0x40)
+    # cmp dx, 0x3000 (即値)
+    if data.find(bytes.fromhex("6681fa0030"), search_start, search_end) != -1:
+        return True
+    # mov eax, 0x3000 / cmp dx, ax (レジスタ経由)
+    if data.find(bytes.fromhex("b800300000"), search_start, search_end) != -1:
+        return True
+    return False
+
+
 def _find_patch3(data, text_start, text_end, text_section):
     """Patch 3: cmp dx, 0x20 + jne short を検索
 
     パターン: 66 83 fa 20  75 XX
-    条件: 近傍 (前後 0x40 バイト) に cmp dx, 0x3000 (66 81 fa 00 30) が存在
+    条件: 近傍 (前後 0x40 バイト) に 0x3000 (全角スペース) 比較が存在
     """
     CMP_DX_20 = bytes.fromhex("6683fa20")
-    CMP_DX_3000 = bytes.fromhex("6681fa0030")
 
     pos = text_start
     candidates = []
@@ -194,9 +206,7 @@ def _find_patch3(data, text_start, text_end, text_section):
             fallthrough_va = _fo_to_va(jne_pos, text_section) + 2
 
             # 近傍に全角スペース比較があるか確認
-            search_start = max(text_start, idx - 0x40)
-            search_end = min(text_end, idx + 0x40)
-            if data.find(CMP_DX_3000, search_start, search_end) != -1:
+            if _has_fullwidth_space_check(data, idx, text_start, text_end):
                 candidates.append({
                     "fo": idx,
                     "va": _fo_to_va(idx, text_section),
@@ -211,7 +221,7 @@ def _find_patch3(data, text_start, text_end, text_section):
     return candidates[0]
 
 
-def _find_code_cave(data, text_start, text_end, min_size=76):
+def _find_code_cave(data, text_start, text_end, min_size=73):
     """text セクション末尾のゼロパディングからコードケーブを確保"""
     # 末尾から逆方向にゼロ領域を探す
     end = text_start + min(len(data) - text_start, text_end - text_start)
@@ -224,9 +234,8 @@ def _find_code_cave(data, text_start, text_end, min_size=76):
     if zero_size < min_size:
         return None
 
-    # 安全マージン: ゼロ領域の先頭から 16 バイト空けてアラインメント確保
-    cave_start = zero_start + 16
-    cave_start = (cave_start + 15) & ~15  # 16バイトアライン
+    # 先頭1バイトだけ空けて使用開始 (全領域がゼロなので安全)
+    cave_start = zero_start + 1
     available = end - cave_start
 
     if available < min_size:

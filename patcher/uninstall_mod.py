@@ -4,9 +4,21 @@ Mewgenics 日本語MOD アンインストーラー
 バックアップからゲームファイルを復元する。
 """
 import json
+import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
+
+
+def _setup_console():
+    """Windows コンソールを UTF-8 に設定"""
+    if sys.platform == "win32":
+        subprocess.run(["chcp", "65001"], shell=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        os.system("title Mewgenics JP MOD Uninstaller")
 
 SCRIPT_DIR = Path(__file__).parent
 
@@ -19,6 +31,10 @@ BACKUP_SUFFIX = CONFIG["backup_suffix"]
 STATE_FILE = CONFIG["state_file"]
 
 
+SETTINGS_DIR_NAME = "Glaiel Games/Mewgenics"
+SETTINGS_FILE_NAME = "settings.txt"
+
+
 def print_header():
     print()
     print("=" * 56)
@@ -27,12 +43,48 @@ def print_header():
     print()
 
 
+def reset_language_setting():
+    """ゲームの言語設定を en に戻す。
+
+    Returns:
+        True: 自動リセット成功 or 元から en
+        False: settings.txt が見つからない (手動対応が必要)
+    """
+    # %APPDATA%/Glaiel Games/Mewgenics/<steam_id>/settings.txt
+    appdata = os.environ.get("APPDATA", "")
+    if not appdata:
+        return False
+
+    settings_root = Path(appdata) / SETTINGS_DIR_NAME
+    if not settings_root.exists():
+        return False
+
+    found = False
+    for settings_file in settings_root.rglob(SETTINGS_FILE_NAME):
+        try:
+            text = settings_file.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        if "current_language ja" not in text:
+            print(f"  言語設定: 既に en です ({settings_file.parent.name})")
+            found = True
+            continue
+
+        new_text = text.replace("current_language ja", "current_language en")
+        settings_file.write_text(new_text, encoding="utf-8")
+        print(f"  言語設定: ja → en にリセットしました ({settings_file.parent.name})")
+        found = True
+
+    return found
+
+
 def do_uninstall():
     """アンインストール処理"""
     print_header()
 
     # ゲームフォルダ検出
-    print("[1/3] Steam ゲームフォルダを検出中...")
+    print("[1/4] Steam ゲームフォルダを検出中...")
     from . import steam_finder
     game_dir = steam_finder.detect_game_dir()
     if not game_dir:
@@ -55,7 +107,7 @@ def do_uninstall():
         return False
 
     # ゲーム実行中チェック
-    print("\n[2/3] ゲーム実行状態を確認中...")
+    print("\n[2/4] ゲーム実行状態を確認中...")
     try:
         f = open(exe, "r+b")
         f.close()
@@ -65,8 +117,21 @@ def do_uninstall():
         return False
     print("  OK")
 
+    # 言語設定リセット
+    print("\n[3/4] 言語設定をリセット中...")
+    if not reset_language_setting():
+        print("  警告: 言語設定ファイルが見つかりませんでした。")
+        print("  アンインストール後にゲームが起動できない場合は、")
+        print("  install.bat で再インストールしてから")
+        print("  ゲーム内で Settings → Language → English に")
+        print("  変更した後、再度アンインストールしてください。")
+        print()
+        ans = input("  続行しますか? (Y/n): ").strip().lower()
+        if ans == "n":
+            return False
+
     # 復元
-    print("\n[3/3] ゲームファイルを復元中...")
+    print("\n[4/4] ゲームファイルを復元中...")
     restored = 0
 
     if gpak_bak.exists():
@@ -107,6 +172,7 @@ def do_uninstall():
 
 
 def main():
+    _setup_console()
     try:
         success = do_uninstall()
     except KeyboardInterrupt:
@@ -119,7 +185,6 @@ def main():
     if not success:
         print()
 
-    input("  Enter キーを押して終了...")
     sys.exit(0 if success else 1)
 
 
