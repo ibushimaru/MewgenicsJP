@@ -32,9 +32,18 @@
 
 ■ トラブルシューティング
 
-  Q: ゲームが起動できない (UNSUPPORTED LANGUAGE)
-  A: Steamのアップデートで MOD が上書きされた可能性があります。
-     install.bat を再度実行してください。
+  Q: 「UNSUPPORTED LANGUAGE」と表示されて起動できない
+
+  A: Steamのアップデートで MOD が上書きされた場合に発生します。
+     以下のいずれかの方法で復旧できます。
+
+     方法1: install.bat を再度実行する
+
+     方法2: 言語設定ファイルを手動で修正する
+       1. Win+R →「%appdata%\Glaiel Games\Mewgenics」を開く
+       2. 数字フォルダ(Steam ID)の中の settings.txt を開く
+       3. 「current_language ja」を
+          「current_language en」に書き換えて保存
 
   Q: install.bat が一瞬で閉じる
   A: install.bat を右クリック →「管理者として実行」を
@@ -46,6 +55,16 @@
 
   Q: ワードラップがおかしい (テキストが1行に詰まる)
   A: install.bat を再度実行してください。
+
+
+■ 不具合報告・連絡先
+
+  MODの不具合やゲームが起動できない等の
+  トラブルがあれば、以下にご連絡ください。
+
+  X (Twitter): @ibushi_maru
+  Discord: 燻丸
+  GitHub: https://github.com/ibushimaru/MewgenicsJP/issues
 
 
 ■ 技術情報

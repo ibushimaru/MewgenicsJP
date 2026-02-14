@@ -29,6 +29,29 @@ Steamのアップデートでゲームファイルが上書きされると、MOD
 **推奨**: Steamの自動アップデートを制限しておくと安全です。
 Steam → Mewgenics → プロパティ → アップデート → 「起動時にのみアップデート」に変更
 
+## トラブルシューティング
+
+### 「UNSUPPORTED LANGUAGE」と表示されてゲームが起動できない
+
+Steamのアップデートで MOD が上書きされた場合に発生します。
+以下のいずれかの方法で復旧できます。
+
+**方法1**: `install.bat` を再度実行する
+
+**方法2**: 言語設定ファイルを手動で修正する
+
+1. `Win+R` → `%appdata%\Glaiel Games\Mewgenics` を開く
+2. 数字のフォルダ (Steam ID) の中にある `settings.txt` を開く
+3. `current_language ja` を `current_language en` に書き換えて保存
+
+## 不具合報告・連絡先
+
+MODの不具合やゲームが起動できない等のトラブルがあれば、以下にご連絡ください。
+
+- X (Twitter): [@ibushi_maru](https://x.com/ibushi_maru)
+- Discord: 燻丸
+- GitHub: [Issues](../../issues)
+
 ## 技術情報
 
 - フォント: Yusei Magic
