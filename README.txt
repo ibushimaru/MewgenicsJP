@@ -18,18 +18,23 @@
   ゲームファイルと言語設定が自動で元に戻ります。
 
 
-■ ゲームアップデート後  *** 重要 ***
+■ 動作要件
+
+  - Windows 10/11 (64bit)
+  - Steam版 Mewgenics
+
+
+■ ゲームアップデート後
 
   Steamのアップデートでゲームファイルが上書きされると、
   MODが無効になりゲームが起動できなくなる場合があります。
 
-  → install.bat を再度実行してください。
+  ゲームのアップデートにより exe の内部構造が変更された場合、
+  現在のMODでは対応できないことがあります。
+  GitHub の Releases ページで最新版を確認するか、
+  下記の連絡先までお問い合わせください。
 
-  ※ ゲームのアップデートにより exe の内部構造が変更された
-     場合、ワードラップパッチが適用できなくなることがあります。
-     その場合は MOD の新バージョンで対応しますので、
-     GitHub の Releases ページで最新版を確認するか、
-     下記の連絡先までお問い合わせください。
+  https://github.com/ibushimaru/MewgenicsJP/releases
 
 
 ■ トラブルシューティング
@@ -44,8 +49,8 @@
      方法2: 言語設定ファイルを手動で修正する
        1. Win+R →「%appdata%\Glaiel Games\Mewgenics」を開く
        2. 数字フォルダ(Steam ID)の中の settings.txt を開く
-       3. 「current_language ja」を
-          「current_language en」に書き換えて保存
+       3.「current_language ja」を
+         「current_language en」に書き換えて保存
 
   Q: install.bat が一瞬で閉じる
   A: install.bat を右クリック →「管理者として実行」を
@@ -67,13 +72,6 @@
   X (Twitter): @ibushi_maru
   Discord: 燻丸
   GitHub: https://github.com/ibushimaru/MewgenicsJP/issues
-
-
-■ 技術情報
-
-  - フォント: Yusei Magic
-  - ワードラップ: BudouX + ZWSP による自然な改行
-  - パッチ方式: gpak デルタリパック + exe バイナリパッチ
 
 
 ■ クレジット
