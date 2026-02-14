@@ -41,6 +41,9 @@ GPAK_NAME = CONFIG["gpak_name"]
 BACKUP_SUFFIX = CONFIG["backup_suffix"]
 STATE_FILE = CONFIG["state_file"]
 
+SETTINGS_DIR_NAME = "Glaiel Games/Mewgenics"
+SETTINGS_FILE_NAME = "settings.txt"
+
 
 def print_header():
     print()
@@ -87,6 +90,38 @@ def check_disk_space(game_dir):
         pass  # 容量チェック失敗は無視して続行
 
     return True, ""
+
+
+def set_language_ja():
+    """ゲームの言語設定を ja に変更する"""
+    appdata = os.environ.get("APPDATA", "")
+    if not appdata:
+        return False
+
+    settings_root = Path(appdata) / SETTINGS_DIR_NAME
+    if not settings_root.exists():
+        return False
+
+    found = False
+    for settings_file in settings_root.rglob(SETTINGS_FILE_NAME):
+        try:
+            text = settings_file.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        if "current_language ja" in text:
+            print("  言語設定: 既に ja です")
+            found = True
+            continue
+
+        if "current_language " in text:
+            import re
+            new_text = re.sub(r"current_language \w+", "current_language ja", text)
+            settings_file.write_text(new_text, encoding="utf-8")
+            print(f"  言語設定: ja に変更しました")
+            found = True
+
+    return found
 
 
 def check_version(game_dir):
@@ -193,8 +228,8 @@ def do_install():
     """メインインストール処理"""
     print_header()
 
-    # --- [1/7] Steam ゲームフォルダ自動検出 ---
-    print("[1/7] Steam ゲームフォルダを検出中...")
+    # --- [1/8] Steam ゲームフォルダ自動検出 ---
+    print("[1/8] Steam ゲームフォルダを検出中...")
     from . import steam_finder
     game_dir = steam_finder.detect_game_dir()
     if not game_dir:
@@ -214,16 +249,16 @@ def do_install():
         print(f"\n  エラー: {GPAK_NAME} が見つかりません: {gpak_path}")
         return False
 
-    # --- [2/7] ゲーム実行中チェック ---
-    print("\n[2/7] ゲーム実行状態を確認中...")
+    # --- [2/8] ゲーム実行中チェック ---
+    print("\n[2/8] ゲーム実行状態を確認中...")
     if is_game_running(game_dir):
         print("  エラー: ゲームが実行中です。")
         print("  ゲームを終了してから再度実行してください。")
         return False
     print("  OK")
 
-    # --- [3/7] ゲームバージョン確認 ---
-    print("\n[3/7] ゲームバージョンを確認中...")
+    # --- [3/8] ゲームバージョン確認 ---
+    print("\n[3/8] ゲームバージョンを確認中...")
     warnings = check_version(game_dir)
     if warnings:
         print("  注意: 未テストバージョンのゲームです。")
@@ -237,8 +272,8 @@ def do_install():
     else:
         print("  OK")
 
-    # --- [4/7] バックアップ作成 ---
-    print("\n[4/7] バックアップを作成中...")
+    # --- [4/8] バックアップ作成 ---
+    print("\n[4/8] バックアップを作成中...")
     ok, msg = check_disk_space(game_dir)
     if not ok:
         print(f"  エラー: {msg}")
@@ -246,8 +281,8 @@ def do_install():
 
     gpak_bak, exe_bak, _ = create_backups(game_dir)
 
-    # --- [5/7] gpak デルタリパック ---
-    print("\n[5/7] 翻訳データを適用中...")
+    # --- [5/8] gpak デルタリパック ---
+    print("\n[5/8] 翻訳データを適用中...")
     if not OVERLAY_DIR.exists():
         print(f"  エラー: overlay ディレクトリが見つかりません: {OVERLAY_DIR}")
         return False
@@ -268,8 +303,8 @@ def do_install():
         print(f"\n  エラー: gpak リパック失敗: {e}")
         return False
 
-    # --- [6/7] exe ZWSP パッチ ---
-    print("\n[6/7] ワードラップパッチを適用中...")
+    # --- [6/8] exe ZWSP パッチ ---
+    print("\n[6/8] ワードラップパッチを適用中...")
     from . import exe_patcher
 
     success, msg = exe_patcher.apply_patch(exe_path, exe_bak)
@@ -279,8 +314,15 @@ def do_install():
         print(f"  警告: exe パッチ失敗: {msg}")
         print("  翻訳は動作しますが、長文テキストの改行が不自然になる場合があります。")
 
-    # --- [7/7] 状態保存 ---
-    print("\n[7/7] インストール状態を保存中...")
+    # --- [7/8] 言語設定 ---
+    print("\n[7/8] 言語設定を変更中...")
+    if not set_language_ja():
+        print("  言語設定ファイルが見つかりませんでした。")
+        print("  ゲーム起動後に手動で切り替えてください:")
+        print("    Settings → Language → 日本語")
+
+    # --- [8/8] 状態保存 ---
+    print("\n[8/8] インストール状態を保存中...")
     save_state(
         game_dir,
         gpak_size=gpak_bak.stat().st_size,
@@ -294,8 +336,19 @@ def do_install():
     print("  インストール完了!")
     print("=" * 56)
     print()
-    print("  ゲームを起動して以下の手順で日本語に切り替えてください:")
-    print("    Settings → Language → 日本語")
+    print("  ゲームを起動すると日本語で表示されます。")
+    print()
+
+    # Steam ラウンチオプション案内
+    python_exe = ROOT_DIR / "python" / "python.exe"
+    print("  【推奨】Steam アップデート保護の設定:")
+    print(f'  Steam → Mewgenics → プロパティ → 一般')
+    print(f'  → 起動オプションに以下を設定:')
+    print()
+    print(f'  "{python_exe}" -m patcher.check_mod %command%')
+    print()
+    print("  これにより、アップデートでMODが消えた場合も")
+    print("  ゲーム起動時に自動で対処されます。")
     print()
 
     return True

@@ -34,6 +34,18 @@ jobs:
           PTH=$(ls build/MewgenicsJP/python/python*._pth)
           echo ".." >> "$PTH"
 
+      - name: Remove unused Python files
+        run: |
+          cd build/MewgenicsJP/python
+          # Keep only: python.exe, python3.dll, python312.dll, python312.zip,
+          #            python312._pth, vcruntime140.dll, vcruntime140_1.dll
+          rm -f pythonw.exe python.cat LICENSE.txt
+          rm -f libcrypto-3.dll libssl-3.dll libffi-8.dll sqlite3.dll
+          rm -f *.pyd
+          echo "Python files after cleanup:"
+          ls -lhS
+          du -sh .
+
       - name: Assemble release ZIP
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
