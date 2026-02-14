@@ -1,0 +1,12 @@
+# Windows bat files must use CRLF
+*.bat text eol=crlf
+
+# Python scripts use LF
+*.py text eol=lf
+
+# Text files use LF
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.csv text eol=lf

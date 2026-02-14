@@ -1,0 +1,68 @@
+name: Build Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Download Python embeddable (Windows x64)
+        run: |
+          PYTHON_VERSION="3.12.8"
+          PYTHON_URL="https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}-embed-amd64.zip"
+          curl -L -o python-embed.zip "$PYTHON_URL"
+          mkdir -p build/MewgenicsJP/python
+          cd build/MewgenicsJP/python
+          unzip ../../../python-embed.zip
+          cd ../../..
+          rm python-embed.zip
+
+      - name: Assemble release ZIP
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+
+          # Copy project files
+          cp install.bat build/MewgenicsJP/
+          cp uninstall.bat build/MewgenicsJP/
+          cp README.txt build/MewgenicsJP/
+          cp -r patcher build/MewgenicsJP/
+          cp -r overlay build/MewgenicsJP/
+
+          # Create ZIP
+          cd build
+          zip -r "../MewgenicsJP-${VERSION}.zip" MewgenicsJP/
+          cd ..
+
+          # Show contents
+          echo "=== ZIP contents ==="
+          unzip -l "MewgenicsJP-${VERSION}.zip" | tail -5
+          ls -lh "MewgenicsJP-${VERSION}.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MewgenicsJP-${{ steps.version.outputs.VERSION }}.zip
+          name: Mewgenics 日本語MOD ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## インストール方法
+
+            1. `MewgenicsJP-${{ steps.version.outputs.VERSION }}.zip` をダウンロード
+            2. 任意の場所に展開
+            3. `install.bat` をダブルクリック
+
+            詳しくは ZIP 内の `README.txt` を参照してください。
+          draft: false
+          prerelease: false

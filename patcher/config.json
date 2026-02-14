@@ -1,0 +1,18 @@
+{
+    "mod_version": "1.0.0",
+    "game_name": "Mewgenics",
+    "steam_app_id": "1920960",
+    "exe_name": "Mewgenics.exe",
+    "gpak_name": "resources.gpak",
+    "backup_suffix": ".backup",
+    "state_file": "mewgenics_jp_state.json",
+    "tested_versions": {
+        "note": "テスト済みの exe/gpak サイズ。未知のサイズは警告を出すが続行可能。",
+        "exe_sizes": [21901312],
+        "gpak_sizes": []
+    },
+    "patch_signatures": {
+        "note": "パッチ適用済み判定用シグネチャ",
+        "zwsp_cmp_r9w": "664181f90b20"
+    }
+}
