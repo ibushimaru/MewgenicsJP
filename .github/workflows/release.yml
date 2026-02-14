@@ -49,17 +49,21 @@ jobs:
       - name: Assemble release ZIP
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
+          FOLDER="MewgenicsJP-${VERSION}"
+
+          # Rename build folder to include version
+          mv build/MewgenicsJP "build/${FOLDER}"
 
           # Copy project files
-          cp install.bat build/MewgenicsJP/
-          cp uninstall.bat build/MewgenicsJP/
-          cp README.txt build/MewgenicsJP/
-          cp -r patcher build/MewgenicsJP/
-          cp -r overlay build/MewgenicsJP/
+          cp install.bat "build/${FOLDER}/"
+          cp uninstall.bat "build/${FOLDER}/"
+          cp README.txt "build/${FOLDER}/"
+          cp -r patcher "build/${FOLDER}/"
+          cp -r overlay "build/${FOLDER}/"
 
           # Create ZIP
           cd build
-          zip -r "../MewgenicsJP-${VERSION}.zip" MewgenicsJP/
+          zip -r "../MewgenicsJP-${VERSION}.zip" "${FOLDER}/"
           cd ..
 
           # Show contents
