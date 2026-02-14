@@ -26,25 +26,28 @@
 
 ■ ゲームアップデート後
 
-  Steamのアップデートでゲームファイルが上書きされると、
-  MODが無効になりゲームが起動できなくなる場合があります。
+  Steamのアップデートにより MOD が無効になり、
+  ゲームが起動できなくなる場合があります。
+
+  1. uninstall.bat を実行して元に戻す
+  2. 最新版の MOD をダウンロード
+     https://github.com/ibushimaru/MewgenicsJP/releases
+  3. install.bat を再度実行
 
   ゲームのアップデートにより exe の内部構造が変更された場合、
-  現在のMODでは対応できないことがあります。
-  GitHub の Releases ページで最新版を確認するか、
-  下記の連絡先までお問い合わせください。
-
-  https://github.com/ibushimaru/MewgenicsJP/releases
+  最新版の MOD でも対応できないことがあります。
+  その場合は下記の連絡先までお問い合わせください。
 
 
 ■ トラブルシューティング
 
   Q: 「UNSUPPORTED LANGUAGE」と表示されて起動できない
 
-  A: Steamのアップデートで MOD が上書きされた場合に発生します。
-     以下のいずれかの方法で復旧できます。
+  A: MOD が無効な状態で言語設定が ja のままになっている
+     場合に発生します。以下のいずれかの方法で復旧できます。
 
-     方法1: install.bat を再度実行する
+     方法1: uninstall.bat を実行する
+            (言語設定が自動で en に戻ります)
 
      方法2: 言語設定ファイルを手動で修正する
        1. Win+R →「%appdata%\Glaiel Games\Mewgenics」を開く
@@ -59,9 +62,6 @@
   Q: ゲームフォルダが見つからないと表示される
   A: 手動でゲームフォルダのパスを入力してください。
      例: D:\SteamLibrary\steamapps\common\Mewgenics
-
-  Q: ワードラップがおかしい (テキストが1行に詰まる)
-  A: install.bat を再度実行してください。
 
 
 ■ 不具合報告・連絡先

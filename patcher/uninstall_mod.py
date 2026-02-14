@@ -98,13 +98,7 @@ def do_uninstall():
     exe = game_dir / EXE_NAME
     exe_bak = game_dir / (EXE_NAME + BACKUP_SUFFIX)
     state_path = game_dir / STATE_FILE
-
-    # バックアップ存在確認
-    if not gpak_bak.exists() and not exe_bak.exists():
-        print("\n  バックアップが見つかりません。")
-        print("  MODがインストールされていないか、")
-        print("  Steamの「ゲームファイルの整合性を確認」を使用してください。")
-        return False
+    has_backups = gpak_bak.exists() or exe_bak.exists()
 
     # ゲーム実行中チェック
     print("\n[2/4] ゲーム実行状態を確認中...")
@@ -117,21 +111,31 @@ def do_uninstall():
         return False
     print("  OK")
 
-    # 言語設定リセット
+    # 言語設定リセット (バックアップの有無に関わらず実行)
     print("\n[3/4] 言語設定をリセット中...")
     if not reset_language_setting():
-        print("  警告: 言語設定ファイルが見つかりませんでした。")
-        print("  アンインストール後にゲームが起動できない場合は、")
-        print("  install.bat で再インストールしてから")
-        print("  ゲーム内で Settings → Language → English に")
-        print("  変更した後、再度アンインストールしてください。")
-        print()
-        ans = input("  続行しますか? (Y/n): ").strip().lower()
-        if ans == "n":
-            return False
+        print("  言語設定ファイルが見つかりませんでした。")
 
     # 復元
     print("\n[4/4] ゲームファイルを復元中...")
+
+    if not has_backups:
+        print("  バックアップが見つかりません。")
+        print("  Steamの「ゲームファイルの整合性を確認」で復元してください。")
+        print()
+        print("=" * 56)
+        print("  言語設定をリセットしました")
+        print("=" * 56)
+        print()
+        print("  ゲームファイルの復元は Steam から行ってください:")
+        print("  Steam → Mewgenics → プロパティ")
+        print("  → インストール済みファイル → ゲームファイルの整合性を確認")
+        print()
+        # 状態ファイル削除
+        if state_path.exists():
+            state_path.unlink()
+        return True
+
     restored = 0
 
     if gpak_bak.exists():
@@ -156,17 +160,13 @@ def do_uninstall():
     if state_path.exists():
         state_path.unlink()
 
-    if restored > 0:
-        print()
-        print("=" * 56)
-        print("  アンインストール完了!")
-        print("=" * 56)
-        print()
-        print("  ゲームファイルを元の状態に復元しました。")
-        print("  バックアップファイルは削除されました。")
-        print()
-    else:
-        print("\n  復元するファイルがありませんでした。")
+    print()
+    print("=" * 56)
+    print("  アンインストール完了!")
+    print("=" * 56)
+    print()
+    print("  ゲームファイルを元の状態に復元しました。")
+    print()
 
     return True
 

@@ -1,14 +1,15 @@
 """
 Mewgenics 日本語MOD インストーラー
 
-7ステップでゲームに日本語MODを適用する:
+8ステップでゲームに日本語MODを適用する:
 1. Steam ゲームフォルダ自動検出
 2. ゲーム実行中チェック
 3. ゲームバージョン確認
 4. バックアップ作成
 5. gpak デルタリパック
 6. exe ZWSP パッチ
-7. 状態保存
+7. 言語設定変更
+8. 状態保存
 """
 import json
 import os
@@ -125,12 +126,17 @@ def set_language_ja():
 
 
 def check_version(game_dir):
-    """exe/gpak サイズをテスト済みバージョンと照合"""
+    """exe/gpak サイズをテスト済みバージョンと照合。
+
+    MOD 適用済みの場合はバックアップ (バニラ) のサイズで比較する。
+    """
     warnings = []
 
     exe = game_dir / EXE_NAME
+    exe_bak = game_dir / (EXE_NAME + BACKUP_SUFFIX)
     if exe.exists():
-        exe_size = exe.stat().st_size
+        # バックアップがあればバニラサイズで比較
+        exe_size = exe_bak.stat().st_size if exe_bak.exists() else exe.stat().st_size
         tested_exe = CONFIG["tested_versions"]["exe_sizes"]
         if tested_exe and exe_size not in tested_exe:
             warnings.append(
@@ -139,8 +145,9 @@ def check_version(game_dir):
             )
 
     gpak = game_dir / GPAK_NAME
+    gpak_bak = game_dir / (GPAK_NAME + BACKUP_SUFFIX)
     if gpak.exists():
-        gpak_size = gpak.stat().st_size
+        gpak_size = gpak_bak.stat().st_size if gpak_bak.exists() else gpak.stat().st_size
         tested_gpak = CONFIG["tested_versions"]["gpak_sizes"]
         if tested_gpak and gpak_size not in tested_gpak:
             warnings.append(
