@@ -339,18 +339,6 @@ def do_install():
     print("  ゲームを起動すると日本語で表示されます。")
     print()
 
-    # Steam ラウンチオプション案内
-    python_exe = ROOT_DIR / "python" / "python.exe"
-    print("  【推奨】Steam アップデート保護の設定:")
-    print(f'  Steam → Mewgenics → プロパティ → 一般')
-    print(f'  → 起動オプションに以下を設定:')
-    print()
-    print(f'  "{python_exe}" -m patcher.check_mod %command%')
-    print()
-    print("  これにより、アップデートでMODが消えた場合も")
-    print("  ゲーム起動時に自動で対処されます。")
-    print()
-
     return True
 
 
