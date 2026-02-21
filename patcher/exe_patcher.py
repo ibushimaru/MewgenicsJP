@@ -221,90 +221,90 @@ def _find_patch3(data, text_start, text_end, text_section):
     return candidates[0]
 
 
-def _find_code_cave(data, text_start, text_end, min_size=73):
-    """text セクション末尾のゼロパディングからコードケーブを確保"""
-    # 末尾から逆方向にゼロ領域を探す
-    end = text_start + min(len(data) - text_start, text_end - text_start)
-    pos = end - 1
-    while pos >= text_start and data[pos] == 0:
-        pos -= 1
-    zero_start = pos + 1
-    zero_size = end - zero_start
+def _find_code_caves(data, text_start, text_end, sizes=(25, 25, 23)):
+    """text セクション内のゼロパディング領域からコードケーブを確保
 
-    if zero_size < min_size:
-        return None
+    各トランポリンに必要なサイズ: T1=25, T2=25, T3=23 bytes
+    連続73byte以上のケーブが1つあればそこに全部配置。
+    なければ個別に確保して分散配置する。
+    """
+    total = sum(sizes)
 
-    # 先頭1バイトだけ空けて使用開始 (全領域がゼロなので安全)
-    cave_start = zero_start + 1
-    available = end - cave_start
+    # 全てのゼロパディング領域を列挙
+    caves = []
+    run_start = 0
+    run_len = 0
+    for i in range(text_start, text_end):
+        if data[i] == 0:
+            if run_len == 0:
+                run_start = i
+            run_len += 1
+        else:
+            if run_len >= min(sizes):
+                caves.append((run_start, run_len))
+            run_len = 0
+    if run_len >= min(sizes):
+        caves.append((run_start, run_len))
 
-    if available < min_size:
-        return None
+    # 方法1: 1つの大きな領域に全て配置
+    for start, size in caves:
+        if size >= total + 1:  # +1 for safety margin
+            return [(start + 1, sizes[0]), (start + 1 + sizes[0], sizes[1]),
+                    (start + 1 + sizes[0] + sizes[1], sizes[2])]
 
-    return cave_start
+    # 方法2: 分散配置 (各トランポリンを別々の領域に)
+    allocated = []
+    used = set()
+    for needed in sizes:
+        found = False
+        for start, size in sorted(caves, key=lambda x: -x[1]):
+            # 既に使用した領域と重ならないか
+            cave_start = start + 1
+            cave_end = cave_start + needed
+            if size < needed + 1:
+                continue
+            overlap = False
+            for a_start, a_size in used:
+                if not (cave_end <= a_start or cave_start >= a_start + a_size):
+                    overlap = True
+                    break
+            if not overlap:
+                allocated.append((cave_start, needed))
+                used.add((cave_start, needed))
+                found = True
+                break
+        if not found:
+            return None
+
+    return allocated
 
 
-def _build_cave_code(cave_fo, patch1, patch2, patch3, text_section):
-    """3つのトランポリンを含むコードケーブを構築"""
-    cave_va = _fo_to_va(cave_fo, text_section)
+def _build_trampoline_r9w(cave_va, true_target, false_target):
+    """r9w トランポリン: r9w == 0x20 || r9w == 0x200B を判定 (25 bytes)"""
     code = bytearray()
-
-    # --- Trampoline 1 (Patch 1: cmp r9w, 0x20 / jne) ---
-    # r9w == 0x20 → fallthrough (改行ポイント保存)
-    # r9w == 0x200B → fallthrough
-    # それ以外 → jne_target (スキップ)
-    t1_va = cave_va
-
     code += b'\x66\x41\x83\xf9\x20'      # cmp r9w, 0x20
-    code += b'\x74\x06'                    # je .is_space1
+    code += b'\x74\x06'                    # je .is_space
     code += b'\x66\x41\x81\xf9\x0b\x20'  # cmp r9w, 0x200B
-    code += b'\x75\x05'                    # jne .not_space1
-    # .is_space1:
-    is_space1_va = t1_va + len(code)
-    code += b'\xe9' + _rel32(is_space1_va, patch1["fallthrough_va"])
-    # .not_space1:
-    not_space1_va = t1_va + len(code)
-    code += b'\xe9' + _rel32(not_space1_va, patch1["jne_target_va"])
+    code += b'\x75\x05'                    # jne .not_space
+    is_va = cave_va + len(code)
+    code += b'\xe9' + _rel32(is_va, true_target)
+    not_va = cave_va + len(code)
+    code += b'\xe9' + _rel32(not_va, false_target)
+    return bytes(code)
 
-    t1_size = len(code)
 
-    # --- Trampoline 2 (Patch 2: cmp r9w, 0x20 / je) ---
-    # r9w == 0x20 → je_target (スペース処理)
-    # r9w == 0x200B → je_target
-    # それ以外 → fallthrough (続行)
-    t2_va = t1_va + t1_size
-    t2_off = len(code)
-
-    code += b'\x66\x41\x83\xf9\x20'      # cmp r9w, 0x20
-    code += b'\x74\x06'                    # je .is_space2
-    code += b'\x66\x41\x81\xf9\x0b\x20'  # cmp r9w, 0x200B
-    code += b'\x75\x05'                    # jne .not_space2
-    # .is_space2:
-    is_space2_va = t2_va + (len(code) - t2_off)
-    code += b'\xe9' + _rel32(is_space2_va, patch2["je_target_va"])
-    # .not_space2:
-    not_space2_va = t2_va + (len(code) - t2_off)
-    code += b'\xe9' + _rel32(not_space2_va, patch2["fallthrough_va"])
-
-    # --- Trampoline 3 (Patch 3: cmp dx, 0x20 / jne) ---
-    # dx == 0x20 → fallthrough (行頭スペース/ZWSP削除)
-    # dx == 0x200B → fallthrough
-    # それ以外 → jne_target
-    t3_va = cave_va + len(code)
-    t3_off = len(code)
-
+def _build_trampoline_dx(cave_va, true_target, false_target):
+    """dx トランポリン: dx == 0x20 || dx == 0x200B を判定 (23 bytes)"""
+    code = bytearray()
     code += b'\x66\x83\xfa\x20'           # cmp dx, 0x20
-    code += b'\x74\x05'                    # je .is_space3
+    code += b'\x74\x05'                    # je .is_space
     code += b'\x66\x81\xfa\x0b\x20'      # cmp dx, 0x200B
-    code += b'\x75\x05'                    # jne .not_space3
-    # .is_space3:
-    is_space3_va = t3_va + (len(code) - t3_off)
-    code += b'\xe9' + _rel32(is_space3_va, patch3["fallthrough_va"])
-    # .not_space3:
-    not_space3_va = t3_va + (len(code) - t3_off)
-    code += b'\xe9' + _rel32(not_space3_va, patch3["jne_target_va"])
-
-    return bytes(code), t1_va, t2_va, t3_va
+    code += b'\x75\x05'                    # jne .not_space
+    is_va = cave_va + len(code)
+    code += b'\xe9' + _rel32(is_va, true_target)
+    not_va = cave_va + len(code)
+    code += b'\xe9' + _rel32(not_va, false_target)
+    return bytes(code)
 
 
 def is_patched(exe_path):
@@ -353,44 +353,53 @@ def apply_patch(exe_path, backup_path=None):
     if not patch3:
         return False, "Patch 3 のパターンが見つかりません (cmp dx, 0x20 + jne near 0x3000)"
 
-    # コードケーブ確保
-    cave_fo = _find_code_cave(data, text_start, text_end)
-    if not cave_fo:
+    # コードケーブ確保 (分散配置対応)
+    caves = _find_code_caves(data, text_start, text_end)
+    if not caves:
         return False, "コードケーブ (ゼロパディング領域) が不足しています"
 
+    c1_fo, c1_size = caves[0]
+    c2_fo, c2_size = caves[1]
+    c3_fo, c3_size = caves[2]
+    c1_va = _fo_to_va(c1_fo, text)
+    c2_va = _fo_to_va(c2_fo, text)
+    c3_va = _fo_to_va(c3_fo, text)
+
     # トランポリンコード構築
-    cave_code, t1_va, t2_va, t3_va = _build_cave_code(
-        cave_fo, patch1, patch2, patch3, text
-    )
+    t1_code = _build_trampoline_r9w(c1_va, patch1["fallthrough_va"], patch1["jne_target_va"])
+    t2_code = _build_trampoline_r9w(c2_va, patch2["je_target_va"], patch2["fallthrough_va"])
+    t3_code = _build_trampoline_dx(c3_va, patch3["fallthrough_va"], patch3["jne_target_va"])
 
     # バックアップ
     if backup_path and not Path(backup_path).exists():
         Path(backup_path).write_bytes(bytes(data))
 
     # Patch 1: jmp to trampoline 1 + nops
-    p1_bytes = b'\xe9' + _rel32(patch1["va"], t1_va) + b'\x90' * 6
+    p1_bytes = b'\xe9' + _rel32(patch1["va"], c1_va) + b'\x90' * 6
     data[patch1["fo"]:patch1["fo"] + 11] = p1_bytes
 
     # Patch 2: jmp to trampoline 2 + nops
-    p2_bytes = b'\xe9' + _rel32(patch2["va"], t2_va) + b'\x90' * 6
+    p2_bytes = b'\xe9' + _rel32(patch2["va"], c2_va) + b'\x90' * 6
     data[patch2["fo"]:patch2["fo"] + 11] = p2_bytes
 
     # Patch 3: jmp to trampoline 3 + nop
-    p3_bytes = b'\xe9' + _rel32(patch3["va"], t3_va) + b'\x90'
+    p3_bytes = b'\xe9' + _rel32(patch3["va"], c3_va) + b'\x90'
     data[patch3["fo"]:patch3["fo"] + 6] = p3_bytes
 
     # コードケーブ書き込み
-    data[cave_fo:cave_fo + len(cave_code)] = cave_code
+    data[c1_fo:c1_fo + len(t1_code)] = t1_code
+    data[c2_fo:c2_fo + len(t2_code)] = t2_code
+    data[c3_fo:c3_fo + len(t3_code)] = t3_code
 
     # 書き込み
     Path(exe_path).write_bytes(bytes(data))
 
+    cave_total = len(t1_code) + len(t2_code) + len(t3_code)
     msg = (
-        f"パッチ適用完了 (3箇所 + コードケーブ {len(cave_code)} bytes)\n"
-        f"    Patch 1: VA 0x{patch1['va']:x}\n"
-        f"    Patch 2: VA 0x{patch2['va']:x}\n"
-        f"    Patch 3: VA 0x{patch3['va']:x}\n"
-        f"    Cave:    FO 0x{cave_fo:x}"
+        f"パッチ適用完了 (3箇所 + トランポリン {cave_total} bytes)\n"
+        f"    Patch 1: VA 0x{patch1['va']:x} → Cave FO 0x{c1_fo:x}\n"
+        f"    Patch 2: VA 0x{patch2['va']:x} → Cave FO 0x{c2_fo:x}\n"
+        f"    Patch 3: VA 0x{patch3['va']:x} → Cave FO 0x{c3_fo:x}"
     )
     return True, msg
 
