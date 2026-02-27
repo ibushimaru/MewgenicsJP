@@ -8,8 +8,8 @@
     "state_file": "mewgenics_jp_state.json",
     "tested_versions": {
         "note": "テスト済みの exe/gpak サイズ。未知のサイズは警告を出すが続行可能。",
-        "exe_sizes": [21901312, 21939712],
-        "gpak_sizes": [4892207115, 4892351343]
+        "exe_sizes": [21901312, 21939712, 21959168],
+        "gpak_sizes": [4892207115, 4892351343, 4892242900]
     },
     "patch_signatures": {
         "note": "パッチ適用済み判定用シグネチャ",
