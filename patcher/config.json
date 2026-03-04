@@ -1,5 +1,5 @@
 {
-    "mod_version": "1.0.6",
+    "mod_version": "1.0.7",
     "game_name": "Mewgenics",
     "steam_app_id": "1920960",
     "exe_name": "Mewgenics.exe",
@@ -8,8 +8,8 @@
     "state_file": "mewgenics_jp_state.json",
     "tested_versions": {
         "note": "テスト済みの exe/gpak サイズ。未知のサイズは警告を出すが続行可能。",
-        "exe_sizes": [21901312, 21939712, 21959168],
-        "gpak_sizes": [4892207115, 4892351343, 4892242900]
+        "exe_sizes": [21901312, 21939712, 21959168, 21959680],
+        "gpak_sizes": [4892207115, 4892351343, 4892242900, 4892217978]
     },
     "patch_signatures": {
         "note": "パッチ適用済み判定用シグネチャ",
