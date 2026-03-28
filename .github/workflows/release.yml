@@ -19,56 +19,24 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Download Python embeddable (Windows x64)
-        run: |
-          PYTHON_VERSION="3.12.8"
-          PYTHON_URL="https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}-embed-amd64.zip"
-          curl -L -o python-embed.zip "$PYTHON_URL"
-          mkdir -p build/MewgenicsJP/python
-          cd build/MewgenicsJP/python
-          unzip ../../../python-embed.zip
-          cd ../../..
-          rm python-embed.zip
-
-          # Add parent dir to module search path
-          PTH=$(ls build/MewgenicsJP/python/python*._pth)
-          echo ".." >> "$PTH"
-
-      - name: Remove unused Python files
-        run: |
-          cd build/MewgenicsJP/python
-          # Keep only: python.exe, python3.dll, python312.dll, python312.zip,
-          #            python312._pth, vcruntime140.dll, vcruntime140_1.dll
-          rm -f pythonw.exe python.cat LICENSE.txt
-          rm -f libcrypto-3.dll libssl-3.dll libffi-8.dll sqlite3.dll
-          rm -f *.pyd
-          echo "Python files after cleanup:"
-          ls -lhS
-          du -sh .
-
       - name: Assemble release ZIP
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           FOLDER="MewgenicsJP-${VERSION}"
+          mkdir -p "build/${FOLDER}"
 
-          # Rename build folder to include version
-          mv build/MewgenicsJP "build/${FOLDER}"
-
-          # Copy project files
           cp install.bat "build/${FOLDER}/"
           cp uninstall.bat "build/${FOLDER}/"
           cp README.txt "build/${FOLDER}/"
-          cp -r patcher "build/${FOLDER}/"
-          cp -r overlay "build/${FOLDER}/"
+          cp version.dll "build/${FOLDER}/"
+          cp -r MewgenicsJP "build/${FOLDER}/"
 
-          # Create ZIP
           cd build
           zip -r "../MewgenicsJP-${VERSION}.zip" "${FOLDER}/"
           cd ..
 
-          # Show contents
           echo "=== ZIP contents ==="
-          unzip -l "MewgenicsJP-${VERSION}.zip" | tail -5
+          unzip -l "MewgenicsJP-${VERSION}.zip" | tail -10
           ls -lh "MewgenicsJP-${VERSION}.zip"
 
       - name: Create GitHub Release
@@ -82,6 +50,9 @@ jobs:
             1. `MewgenicsJP-${{ steps.version.outputs.VERSION }}.zip` をダウンロード
             2. 任意の場所に展開
             3. `install.bat` をダブルクリック
+
+            **v2.0 から Python 不要になりました。**
+            初回起動時に自動で日本語化されます（数秒かかります）。
 
             詳しくは ZIP 内の `README.txt` を参照してください。
           draft: false

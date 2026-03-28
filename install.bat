@@ -1,18 +1,149 @@
 @echo off
+chcp 65001 >nul 2>&1
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
-if not exist "python\python.exe" (
+echo.
+echo  ============================================================
+echo    Mewgenics 日本語MOD インストーラー (v2.0)
+echo  ============================================================
+echo.
+
+:: -----------------------------------------------------------
+:: Steam ゲームフォルダの自動検出
+:: -----------------------------------------------------------
+set "GAME_DIR="
+
+:: レジストリから Steam パスを取得
+for /f "tokens=2*" %%a in ('reg query "HKLM\SOFTWARE\Valve\Steam" /v InstallPath 2^>nul') do set "STEAM_PATH=%%b"
+if not defined STEAM_PATH (
+    for /f "tokens=2*" %%a in ('reg query "HKLM\SOFTWARE\WOW6432Node\Valve\Steam" /v InstallPath 2^>nul') do set "STEAM_PATH=%%b"
+)
+
+if defined STEAM_PATH (
+    :: メインライブラリを確認
+    if exist "!STEAM_PATH!\steamapps\common\Mewgenics\Mewgenics.exe" (
+        set "GAME_DIR=!STEAM_PATH!\steamapps\common\Mewgenics"
+        goto :found
+    )
+
+    :: libraryfolders.vdf から追加ライブラリを検索
+    set "VDF=!STEAM_PATH!\steamapps\libraryfolders.vdf"
+    if exist "!VDF!" (
+        for /f "tokens=1,2 delims=	 " %%a in ('findstr /c:"\"path\"" "!VDF!"') do (
+            set "LIB_PATH=%%~b"
+            set "LIB_PATH=!LIB_PATH:\\=\!"
+            if exist "!LIB_PATH!\steamapps\common\Mewgenics\Mewgenics.exe" (
+                set "GAME_DIR=!LIB_PATH!\steamapps\common\Mewgenics"
+                goto :found
+            )
+        )
+    )
+)
+
+:: よくあるパスをフォールバック検索
+for %%d in (C D E F G) do (
+    if exist "%%d:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe" (
+        set "GAME_DIR=%%d:\SteamLibrary\steamapps\common\Mewgenics"
+        goto :found
+    )
+    if exist "%%d:\Steam\steamapps\common\Mewgenics\Mewgenics.exe" (
+        set "GAME_DIR=%%d:\Steam\steamapps\common\Mewgenics"
+        goto :found
+    )
+)
+
+:: 見つからなかった場合、手動入力
+echo  Mewgenics のゲームフォルダが見つかりませんでした。
+echo.
+echo  確認方法:
+echo    Steam → Mewgenics → 右クリック → 管理
+echo    → ローカルファイルを閲覧
+echo.
+set /p "GAME_DIR=  ゲームフォルダのパス: "
+set "GAME_DIR=!GAME_DIR:"=!"
+
+if not exist "!GAME_DIR!\Mewgenics.exe" (
     echo.
-    echo  Error: python\python.exe not found.
-    echo  Please extract the ZIP file correctly.
+    echo  エラー: Mewgenics.exe が見つかりません。
+    echo  正しいゲームフォルダを指定してください。
     echo.
     pause
     exit /b 1
 )
 
-python\python.exe -m patcher.install_mod
-set RETCODE=%ERRORLEVEL%
+:found
+echo  ゲームフォルダ: !GAME_DIR!
+echo.
+
+:: -----------------------------------------------------------
+:: 既存MODのチェック
+:: -----------------------------------------------------------
+if exist "!GAME_DIR!\version.dll" (
+    echo  既存の日本語MODが検出されました。上書きインストールします。
+    echo.
+)
+
+:: -----------------------------------------------------------
+:: Steamの整合性確認を推奨
+:: -----------------------------------------------------------
+echo  ============================================================
+echo  【推奨】 先に Steam でファイルの整合性を確認してください。
+echo.
+echo    Steam → Mewgenics → 右クリック → プロパティ
+echo    → インストール済みファイル → ファイルの整合性を確認
+echo  ============================================================
+echo.
+echo  整合性確認が済んでいれば、そのままインストールできます。
+echo.
+set /p "CONFIRM=  インストールを続行しますか？ (Y/N): "
+if /i not "!CONFIRM!"=="Y" (
+    echo.
+    echo  キャンセルしました。
+    pause
+    exit /b 0
+)
+
+:: -----------------------------------------------------------
+:: ファイルコピー
+:: -----------------------------------------------------------
+echo.
+echo  インストール中...
+
+:: version.dll をコピー
+copy /y "version.dll" "!GAME_DIR!\version.dll" >nul
+if errorlevel 1 (
+    echo  エラー: version.dll のコピーに失敗しました。
+    echo  ゲームが起動中の場合は終了してから再試行してください。
+    pause
+    exit /b 1
+)
+
+:: MewgenicsJP フォルダをコピー
+xcopy /e /i /y "MewgenicsJP" "!GAME_DIR!\MewgenicsJP" >nul
+if errorlevel 1 (
+    echo  エラー: MewgenicsJP フォルダのコピーに失敗しました。
+    pause
+    exit /b 1
+)
+
+:: 古いバックアップとキャッシュを削除 (再ビルドを強制)
+if exist "!GAME_DIR!\resources.gpak.bak" del "!GAME_DIR!\resources.gpak.bak"
+if exist "!GAME_DIR!\MewgenicsJP\.gpak_state" del "!GAME_DIR!\MewgenicsJP\.gpak_state"
+
+:: 旧方式の残骸を削除
+if exist "!GAME_DIR!\resources.gpak.backup" del "!GAME_DIR!\resources.gpak.backup"
+if exist "!GAME_DIR!\Mewgenics.exe.backup" del "!GAME_DIR!\Mewgenics.exe.backup"
+if exist "!GAME_DIR!\mewgenics_jp_state.json" del "!GAME_DIR!\mewgenics_jp_state.json"
 
 echo.
+echo  ============================================================
+echo    インストール完了！
+echo  ============================================================
+echo.
+echo  ゲームを起動すると自動で日本語化されます。
+echo  初回起動時は数秒かかります（gpak再構築のため）。
+echo.
+
 pause
-exit /b %RETCODE%
+exit /b 0
