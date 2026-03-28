@@ -79,29 +79,32 @@ echo.
 :: -----------------------------------------------------------
 :: 既存MODのチェック
 :: -----------------------------------------------------------
-if exist "!GAME_DIR!\version.dll" (
-    echo  既存の日本語MODが検出されました。上書きインストールします。
-    echo.
-)
+:: 旧方式 (v1.x) の残骸があれば整合性確認を案内
+if exist "!GAME_DIR!\Mewgenics.exe.backup" goto :old_mod
+if exist "!GAME_DIR!\resources.gpak.backup" goto :old_mod
+if exist "!GAME_DIR!\mewgenics_jp_state.json" goto :old_mod
+goto :no_old_mod
 
-:: -----------------------------------------------------------
-:: Steamの整合性確認を推奨
-:: -----------------------------------------------------------
-echo  ============================================================
-echo  【推奨】 先に Steam でファイルの整合性を確認してください。
+:old_mod
+echo  旧バージョン (v1.x) の日本語MODが検出されました。
 echo.
+echo  先に Steam でファイルの整合性を確認してください。
 echo    Steam → Mewgenics → 右クリック → プロパティ
 echo    → インストール済みファイル → ファイルの整合性を確認
-echo  ============================================================
 echo.
-echo  整合性確認が済んでいれば、そのままインストールできます。
-echo.
-set /p "CONFIRM=  インストールを続行しますか？ (Y/N): "
+set /p "CONFIRM=  整合性確認は済みましたか？ (Y/N): "
 if /i not "!CONFIRM!"=="Y" (
     echo.
-    echo  キャンセルしました。
+    echo  整合性確認を行ってから再度実行してください。
     pause
     exit /b 0
+)
+echo.
+
+:no_old_mod
+if exist "!GAME_DIR!\version.dll" (
+    echo  既存の日本語MODを更新します。
+    echo.
 )
 
 :: -----------------------------------------------------------
