@@ -139,6 +139,17 @@ if exist "!GAME_DIR!\resources.gpak.backup" del "!GAME_DIR!\resources.gpak.backu
 if exist "!GAME_DIR!\Mewgenics.exe.backup" del "!GAME_DIR!\Mewgenics.exe.backup"
 if exist "!GAME_DIR!\mewgenics_jp_state.json" del "!GAME_DIR!\mewgenics_jp_state.json"
 
+:: 言語設定を ja に変更
+set "SETTINGS_DIR=%APPDATA%\Glaiel Games\Mewgenics"
+if exist "!SETTINGS_DIR!" (
+    for /d %%d in ("!SETTINGS_DIR!\*") do (
+        set "SETTINGS_FILE=%%d\settings.txt"
+        if exist "!SETTINGS_FILE!" (
+            powershell -NoProfile -Command "(Get-Content '!SETTINGS_FILE!') -replace 'current_language \w+','current_language ja' | Set-Content '!SETTINGS_FILE!'" >nul 2>&1
+        )
+    )
+)
+
 echo.
 echo  ============================================================
 echo    インストール完了！
