@@ -122,6 +122,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:: MewgenicsJP_progress.exe をコピー (進捗表示用ヘルパー)
+copy /y "MewgenicsJP_progress.exe" "!GAME_DIR!\MewgenicsJP_progress.exe" >nul
+if errorlevel 1 (
+    echo  エラー: MewgenicsJP_progress.exe のコピーに失敗しました。
+    pause
+    exit /b 1
+)
+
 :: MewgenicsJP フォルダをコピー
 xcopy /e /i /y "MewgenicsJP" "!GAME_DIR!\MewgenicsJP" >nul
 if errorlevel 1 (

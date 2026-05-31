@@ -29,6 +29,7 @@ jobs:
           cp uninstall.bat "build/${FOLDER}/"
           cp README.txt "build/${FOLDER}/"
           cp version.dll "build/${FOLDER}/"
+          cp MewgenicsJP_progress.exe "build/${FOLDER}/"
           cp -r MewgenicsJP "build/${FOLDER}/"
 
           cd build

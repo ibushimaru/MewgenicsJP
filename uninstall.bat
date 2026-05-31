@@ -97,6 +97,12 @@ if exist "!GAME_DIR!\version.dll" (
     echo    version.dll を削除しました。
 )
 
+:: MewgenicsJP_progress.exe を削除
+if exist "!GAME_DIR!\MewgenicsJP_progress.exe" (
+    del "!GAME_DIR!\MewgenicsJP_progress.exe"
+    echo    MewgenicsJP_progress.exe を削除しました。
+)
+
 :: MewgenicsJP フォルダを削除
 if exist "!GAME_DIR!\MewgenicsJP" (
     rmdir /s /q "!GAME_DIR!\MewgenicsJP"
